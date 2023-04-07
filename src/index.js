@@ -1,6 +1,6 @@
 import Notiflix from 'notiflix';
 import axios from 'axios';
-const axios = require('axios').all;
+const axios = require('axios');
 const refs = {
   searchForm: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),

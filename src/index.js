@@ -1,24 +1,26 @@
 import Notiflix from 'notiflix';
 import axios from 'axios';
-const axios = require('axios');
+var axios = require('axios/dist/browser/axios.cjs');
+// var axios = require('axios/dist/node/axios.cjs');
 const refs = {
   searchForm: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),
   input: document.querySelector('input'),
   loadMore: document.querySelector('.load-more'),
 };
-async function hits() {
-  const hits = await getImages(input.value).then(res => res.hits);
-  return hits;
-}
-async function totalHits() {
-  const totalHits = await getImages(input.value).then(res => res.totalHits);
+// function hits() {
+//   const hits = getImages(input.value).then(res => res.hits);
+//   return hits;
+// }
+function totalHits() {
+  const totalHits = getImages(input.value).then(res => res.totalHits);
   console.log(totalHits);
   return totalHits;
 }
 function reset() {
   page = 1;
   gallery.innerHTML = '';
+  totalHits();
 }
 const { searchForm, gallery, input, loadMore } = refs;
 let page = 1;
@@ -27,7 +29,6 @@ searchForm.addEventListener('submit', evt => {
   evt.preventDefault();
   loadMore.classList.add('is-hidden');
   reset();
-  totalHits();
   queryPictures(input.value);
 });
 loadMore.addEventListener('click', getMoreContent);
@@ -45,24 +46,17 @@ async function getImages(name) {
   }).toString();
   const url = `https://pixabay.com/api/?${params}`;
   try {
-    const response = await axios
-      .get(url)
-      .then(res => {
-        return res.data;
-      })
-      .catch(error => {
-        Notiflix.Notify.info(
-          "We're sorry, but you've reached the end of search results."
-        );
-        loadMore.classList.add('is-hidden');
-      });
+    const response = await axios.get(url).then(res => {
+      return res.data;
+    });
     return response;
   } catch (error) {
+    loadMore.classList.add('is-hidden');
     console.error(error.message);
   }
 }
 ///////////////////////////
-async function renderPageByName(cards) {
+function renderPageByName(cards) {
   const cardList = cards
     .map(
       ({
@@ -99,11 +93,10 @@ async function renderPageByName(cards) {
 /////////////////////
 async function getMoreContent() {
   page += 1;
-  const nums = await getImages(input.value).then(hits);
-  getImages(input.value)
-    .then(hits)
+  await getImages(input.value)
+    .then(val => val.hits)
     .then(res => {
-      if (nums.length < 40 || totalHits.length) {
+      if (res.length < 40 || totalHits.length) {
         Notiflix.Notify.info(
           "We're sorry, but you've reached the end of search results."
         );
@@ -114,18 +107,17 @@ async function getMoreContent() {
 }
 /////////////////////
 async function queryPictures(name) {
-  const nums = await getImages(input.value).then(hits);
-  if (name.trim().length === 0 || nums.length === 0) {
-    Notiflix.Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
-    loadMore.classList.add('is-hidden');
-    return;
-  }
-  getImages(input.value)
-    .then(hits)
-    .then(async res => {
-      await renderPageByName(res);
+  await getImages(input.value)
+    .then(val => val.hits)
+    .then(res => {
+      if (name.trim().length === 0 || res.length === 0) {
+        Notiflix.Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+        loadMore.classList.add('is-hidden');
+        return;
+      }
+      renderPageByName(res);
       loadMore.classList.remove('is-hidden');
     });
 }

@@ -3,16 +3,20 @@ import axios from 'axios';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 var axios = require('axios/dist/browser/axios.cjs');
-// var lightbox = new SimpleLightbox('.gallery a', {});
-// lightbox.on('show.simplelightbox', () => {
-//   lightbox.show();
-// });
+var lightbox = new SimpleLightbox('.gallery a', {
+  animationSpeed: 250,
+  fadeSpeed: 250,
+});
+
 const refs = {
   searchForm: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),
   input: document.querySelector('input'),
   loadMore: document.querySelector('.load-more'),
 };
+lightbox.on('show.simplelightbox', () => {
+  lightbox.shown();
+});
 async function totalHits() {
   await getImages(input.value)
     .then(res => res.totalHits)
@@ -34,7 +38,9 @@ searchForm.addEventListener('submit', evt => {
   queryPictures(input.value);
   reset();
 });
-loadMore.addEventListener('click', getMoreContent);
+loadMore.addEventListener('click', () => {
+  getMoreContent();
+});
 /////////////////////////////////
 async function getImages(name) {
   const API_KEY = '35065203-c3198a287b2074eded36e9961';
@@ -71,7 +77,7 @@ function renderPageByName(cards) {
         comments,
         downloads,
       }) => {
-        return `<div class="photo-card">
+        return `<a href=${largeImageURL}><div class="photo-card">
   <img src=${webformatURL} alt=${tags} loading="lazy" />
   <div class="info">
     <p class="info-item">Likes
@@ -87,7 +93,7 @@ function renderPageByName(cards) {
       <b>${downloads}</b>
     </p>
   </div>
-</div>`;
+</div></a>`;
       }
     )
     .join('');
@@ -119,7 +125,7 @@ async function queryPictures(name) {
   await getImages(input.value)
     .then(val => val.hits)
     .then(res => {
-      if (name.trim().length === 0 || res.length === 0) {
+      if (!name.trim() || res.length === 0) {
         Notiflix.Notify.failure(
           'Sorry, there are no images matching your search query. Please try again.'
         );
@@ -127,14 +133,14 @@ async function queryPictures(name) {
         return;
       }
       renderPageByName(res);
+      lightbox.refresh();
       loadMore.classList.remove('is-hidden');
-    })
-    .catch(error => {
-      if (error.request) {
-        Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
+      if (res.length < 40) {
         loadMore.classList.add('is-hidden');
       }
+      totalHits();
+    })
+    .catch(error => {
+      console.error(error);
     });
 }

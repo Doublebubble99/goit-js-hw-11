@@ -1,26 +1,29 @@
 import Notiflix from 'notiflix';
 import axios from 'axios';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 var axios = require('axios/dist/browser/axios.cjs');
-// var axios = require('axios/dist/node/axios.cjs');
+// var lightbox = new SimpleLightbox('.gallery a', {});
+// lightbox.on('show.simplelightbox', () => {
+//   lightbox.show();
+// });
 const refs = {
   searchForm: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),
   input: document.querySelector('input'),
   loadMore: document.querySelector('.load-more'),
 };
-// function hits() {
-//   const hits = getImages(input.value).then(res => res.hits);
-//   return hits;
-// }
-function totalHits() {
-  const totalHits = getImages(input.value).then(res => res.totalHits);
-  console.log(totalHits);
-  return totalHits;
+async function totalHits() {
+  await getImages(input.value)
+    .then(res => res.totalHits)
+    .then(val => {
+      Notiflix.Notify.success(`Hooray! We found ${val} images.`);
+      return val;
+    });
 }
 function reset() {
   page = 1;
   gallery.innerHTML = '';
-  totalHits();
 }
 const { searchForm, gallery, input, loadMore } = refs;
 let page = 1;
@@ -28,8 +31,8 @@ loadMore.classList.add('is-hidden');
 searchForm.addEventListener('submit', evt => {
   evt.preventDefault();
   loadMore.classList.add('is-hidden');
-  reset();
   queryPictures(input.value);
+  reset();
 });
 loadMore.addEventListener('click', getMoreContent);
 /////////////////////////////////
@@ -46,13 +49,13 @@ async function getImages(name) {
   }).toString();
   const url = `https://pixabay.com/api/?${params}`;
   try {
-    const response = await axios.get(url).then(res => {
-      return res.data;
-    });
+    const response = await axios.get(url).then(res => res.data);
     return response;
   } catch (error) {
+    Notiflix.Notify.info(
+      "We're sorry, but you've reached the end of search results."
+    );
     loadMore.classList.add('is-hidden');
-    console.error(error.message);
   }
 }
 ///////////////////////////
@@ -69,7 +72,7 @@ function renderPageByName(cards) {
         downloads,
       }) => {
         return `<div class="photo-card">
-  <img src=${webformatURL} srcset=${largeImageURL} alt=${tags} loading="lazy" />
+  <img src=${webformatURL} alt=${tags} loading="lazy" />
   <div class="info">
     <p class="info-item">Likes
       <b>${likes}</b>
@@ -96,13 +99,19 @@ async function getMoreContent() {
   await getImages(input.value)
     .then(val => val.hits)
     .then(res => {
-      if (res.length < 40 || totalHits.length) {
+      if (res.length < 40) {
         Notiflix.Notify.info(
           "We're sorry, but you've reached the end of search results."
         );
         loadMore.classList.add('is-hidden');
       }
       renderPageByName(res);
+      lightbox.refresh();
+    })
+    .catch(error => {
+      if (error.response) {
+        return;
+      }
     });
 }
 /////////////////////
@@ -119,5 +128,13 @@ async function queryPictures(name) {
       }
       renderPageByName(res);
       loadMore.classList.remove('is-hidden');
+    })
+    .catch(error => {
+      if (error.request) {
+        Notiflix.Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+        loadMore.classList.add('is-hidden');
+      }
     });
 }

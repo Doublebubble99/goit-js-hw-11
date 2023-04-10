@@ -17,32 +17,23 @@ const refs = {
 lightbox.on('show.simplelightbox', () => {
   lightbox.shown();
 });
-async function totalHits() {
-  await getImages(input.value)
-    .then(res => res.totalHits)
-    .then(val => {
-      Notiflix.Notify.success(`Hooray! We found ${val} images.`);
-      return val;
-    });
-}
 function reset() {
   page = 1;
   gallery.innerHTML = '';
 }
 const { searchForm, gallery, input, loadMore } = refs;
-let page = 1;
+export let page = 1;
 loadMore.classList.add('is-hidden');
 searchForm.addEventListener('submit', evt => {
   evt.preventDefault();
   loadMore.classList.add('is-hidden');
-  queryPictures(input.value);
   reset();
+  queryPictures(input.value);
 });
 loadMore.addEventListener('click', () => {
   getMoreContent();
 });
-/////////////////////////////////
-async function getImages(name) {
+export async function getImages(name) {
   const API_KEY = '35065203-c3198a287b2074eded36e9961';
   const params = new URLSearchParams({
     key: API_KEY,
@@ -64,7 +55,49 @@ async function getImages(name) {
     loadMore.classList.add('is-hidden');
   }
 }
-///////////////////////////
+async function getMoreContent() {
+  page += 1;
+  await getImages(input.value)
+    .then(val => val.hits)
+    .then(res => {
+      if (res.length < 40) {
+        Notiflix.Notify.info(
+          "We're sorry, but you've reached the end of search results."
+        );
+        loadMore.classList.add('is-hidden');
+      }
+      renderPageByName(res);
+      lightbox.refresh();
+    })
+    .catch(error => {
+      if (error.response) {
+        return;
+      }
+    });
+}
+async function queryPictures(name) {
+  await getImages(input.value)
+    .then(val => val.hits)
+    .then(res => {
+      if (!name.trim() || res.length === 0) {
+        Notiflix.Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+        loadMore.classList.add('is-hidden');
+        return;
+      }
+      renderPageByName(res);
+      lightbox.refresh();
+      loadMore.classList.remove('is-hidden');
+      if (res.length < 40) {
+        loadMore.classList.add('is-hidden');
+      }
+      totalHits();
+    })
+    .catch(error => {
+      console.error(error);
+    });
+}
 function renderPageByName(cards) {
   const cardList = cards
     .map(
@@ -99,48 +132,11 @@ function renderPageByName(cards) {
     .join('');
   gallery.insertAdjacentHTML('beforeend', cardList);
 }
-/////////////////////
-async function getMoreContent() {
-  page += 1;
-  await getImages(input.value)
-    .then(val => val.hits)
-    .then(res => {
-      if (res.length < 40) {
-        Notiflix.Notify.info(
-          "We're sorry, but you've reached the end of search results."
-        );
-        loadMore.classList.add('is-hidden');
-      }
-      renderPageByName(res);
-      lightbox.refresh();
-    })
-    .catch(error => {
-      if (error.response) {
-        return;
-      }
-    });
-}
-/////////////////////
-async function queryPictures(name) {
-  await getImages(input.value)
-    .then(val => val.hits)
-    .then(res => {
-      if (!name.trim() || res.length === 0) {
-        Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-        loadMore.classList.add('is-hidden');
-        return;
-      }
-      renderPageByName(res);
-      lightbox.refresh();
-      loadMore.classList.remove('is-hidden');
-      if (res.length < 40) {
-        loadMore.classList.add('is-hidden');
-      }
-      totalHits();
-    })
-    .catch(error => {
-      console.error(error);
+function totalHits() {
+  getImages(input.value)
+    .then(res => res.totalHits)
+    .then(val => {
+      Notiflix.Notify.success(`Hooray! We found ${val} images.`);
+      return val;
     });
 }

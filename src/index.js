@@ -2,7 +2,7 @@ import Notiflix from 'notiflix';
 import axios from 'axios';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-import { getImages } from './getImages';
+import { getImages } from '../src/GetImages';
 var axios = require('axios/dist/browser/axios.cjs');
 var lightbox = new SimpleLightbox('.gallery a', {
   animationSpeed: 250,

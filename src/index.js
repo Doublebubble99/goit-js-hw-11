@@ -91,6 +91,7 @@ function renderPageByName(cards) {
   if (cards.hits.length < 40 && page === 1) {
     Notiflix.Notify.success(`Hooray! We found ${cards.totalHits} images.`);
     loadMore.classList.add('is-hidden');
+    lightbox.refresh();
     return;
   } else if (page === lastPage || cards.hits.length < 40) {
     Notiflix.Notify.info(

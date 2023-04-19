@@ -8,7 +8,7 @@ var lightbox = new SimpleLightbox('.gallery a', {
 });
 export let page = 1;
 export let per_page = 40;
-const lastPage = 13;
+let lastPage = 0;
 const refs = {
   searchForm: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),
@@ -32,29 +32,26 @@ searchForm.addEventListener('submit', async evt => {
 });
 loadMore.addEventListener('click', async () => {
   page += 1;
-  await getMoreContent(input.value.trim());
+  await queryPictures(input.value.trim());
 });
-async function getMoreContent(name) {
-  renderPageByName(await getImages(name));
-}
 async function queryPictures(name) {
-  if (!name) {
+  if (name === '') {
     Notiflix.Notify.failure(
       'Sorry, there are no images matching your search query. Please try again.'
     );
-    loadMore.classList.add('is-hidden');
     return;
   }
-  renderPageByName(await getImages(name));
+  const response = await getImages(name);
+  lastPage = Math.ceil(response.data.totalHits / per_page);
+  if (response.data.totalHits === 0) {
+    Notiflix.Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+    return;
+  }
+  renderPageByName(response.data);
 }
 function renderPageByName(cards) {
-  if (cards.hits.length === 0) {
-    loadMore.classList.add('is-hidden');
-    Notiflix.Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
-    return;
-  }
   const cardList = cards.hits
     .map(
       ({
@@ -93,15 +90,15 @@ function renderPageByName(cards) {
     loadMore.classList.add('is-hidden');
     lightbox.refresh();
     return;
-  } else if (page === lastPage || cards.hits.length < 40) {
+  } else if (page === 1) {
+    Notiflix.Notify.success(`Hooray! We found ${cards.totalHits} images.`);
+  } else if (page === lastPage) {
     Notiflix.Notify.info(
       "We're sorry, but you've reached the end of search results."
     );
     loadMore.classList.add('is-hidden');
     lightbox.refresh();
     return;
-  } else if (page === 1) {
-    Notiflix.Notify.success(`Hooray! We found ${cards.totalHits} images.`);
   }
   lightbox.refresh();
   loadMore.classList.remove('is-hidden');
